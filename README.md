@@ -15,7 +15,7 @@ Enter number of columns [16]: 6
 Enter number of mines [40]: 7
 ```
 Values enclosed in `[]` are default and you can hit enter to go with them.
-The game now begins and the terminal will look like:
+The game now begins and (with the above configuration) the terminal will look like:
 ```
 Let's begin...
 Safe cells left:  23
