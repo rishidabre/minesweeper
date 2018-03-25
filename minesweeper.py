@@ -228,7 +228,7 @@ if __name__ == "__main__":
 	# Set handler for interrupt signal (^c)
 	signal.signal(signal.SIGINT, signal_handler)
 	print "Welcome to Minesweeper for terminal!"
-	print "Configure the mine grid to begin (skip for default)..."
+	print "Configure the mines grid to begin (skip for default)..."
 	# Get configuration
 	rows = get_number("Enter number of rows [16]: ", 16)
 	columns = get_number("Enter number of columns [16]: ", 16)
