@@ -32,3 +32,7 @@ Mark cell (col, row):
 You can mark cells by passing in the row and column indices as a tuple (as shown).
 
 Implementation details can be found as comments in the script.
+
+## References
+[1] https://en.wikipedia.org/wiki/Minesweeper_(video_game)
+[2] http://minesweeperonline.com/#
