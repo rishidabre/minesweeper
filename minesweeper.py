@@ -3,6 +3,7 @@
 import random
 from os import system
 import signal
+from sys import setrecursionlimit
 
 # Main class for grid
 class GameBoard:
@@ -69,16 +70,18 @@ class GameBoard:
 						self.matrix[y][x].value += 1
 			self.matrix[m[1]][m[0]] = v
 
-	# Marks the neighbors of given cell recursively as applicable
-	def __mark_neighbors(self, col, row):
-		if self.check_limits(col, row):
-			return
+	# Performs basic checks to determine if given neighbor can be marked
+	def __check_neighbor_to_mark(self, col, row):
 		# Skip if contains mine
 		if self.matrix[row][col].mine:
-			return
+			return False
 		# Skip if already marked
 		if self.matrix[row][col].state:
-			return
+			return False
+		return True
+
+	# Marks the neighbors of given cell recursively as applicable
+	def __mark_neighbors(self, col, row):
 		# Mark this cell and dDecrement count of unmarked cells
 		self.matrix[row][col].state = 1
 		self.left -= 1
@@ -104,7 +107,8 @@ class GameBoard:
 			safe_neighbors.remove(p)
 		# Mark all the safe neighbors recursively
 		for n in safe_neighbors:
-			self.__mark_neighbors(n[0], n[1])
+			if self.__check_neighbor_to_mark(n[0], n[1]):
+				self.__mark_neighbors(n[0], n[1])
 		return
 
 	# Marks given cell and any neighbors (recursively) if it's value is 0
@@ -124,7 +128,8 @@ class GameBoard:
 			self.matrix[row][col].state = 1
 			return False
 		# Cell value is 0, recursively mark neighbors
-		self.__mark_neighbors(col, row)
+		if self.__check_neighbor_to_mark(col, row):
+			self.__mark_neighbors(col, row)
 		return False
 
 	# Prints the entire board on console (real = True if mines are to be revealed)
@@ -159,7 +164,7 @@ class GameBoard:
 		return False
 
 # Prompts user with given message and requests for a number repeatedly until it is valid
-def get_number(msg, default):
+def get_number(msg, default, limit):
 	inv_msg = "Invalid number, try again"
 	while True:
 		try:
@@ -168,7 +173,7 @@ def get_number(msg, default):
 				print inv_msg
 				continue
 			n = int(n)
-			if n < 0:
+			if n < 1 or n > limit:
 				print inv_msg
 				continue
 			return n
@@ -186,10 +191,6 @@ def signal_handler(signal, frame):
 def clear_and_prompt(msg):
 	system('clear')
 	print msg
-
-# Validates given configuration
-def validate(rows, columns, mines):
-	return mines < (rows * columns)
 
 # Main function encapsulating game play
 def gameplay(board):
@@ -224,19 +225,26 @@ def gameplay(board):
 			print "Congratulations, you win!"
 			break
 
+# Preset configuration
+MAX_ROWS = 50
+MAX_COLS = 60
+DEF_ROWS = 16
+DEF_COLS = 16
+DEF_MINES = 40
+
 if __name__ == "__main__":
+	# Set recursion limit for boards configured with huge number of cells
+	setrecursionlimit(6000)
 	# Set handler for interrupt signal (^c)
 	signal.signal(signal.SIGINT, signal_handler)
 	print "Welcome to Minesweeper for terminal!"
 	print "Configure the mines grid to begin (skip for default)..."
 	# Get configuration
-	rows = get_number("Enter number of rows [16]: ", 16)
-	columns = get_number("Enter number of columns [16]: ", 16)
-	mines = get_number("Enter number of mines [40]: ", 40)
-	# Perform basic validation
-	if not validate(rows, columns, mines):
-		print "Invalid configuration"
-		quit()
+	rows = get_number("Enter number of rows (max %d) [%d]: "%(MAX_ROWS, DEF_ROWS), DEF_ROWS, MAX_ROWS)
+	columns = get_number("Enter number of columns (max %d) [%d]: "%(MAX_COLS, DEF_COLS), DEF_COLS, MAX_COLS)
+	max_mines = (rows * columns - 1)
+	def_mines = (max_mines if max_mines < DEF_MINES else DEF_MINES)
+	mines = get_number("Enter number of mines (max %d) [%d]: "%(max_mines, def_mines), def_mines, max_mines)
 	# Initialize the board
 	board = GameBoard(rows, columns, mines)
 	# Start gameplay
