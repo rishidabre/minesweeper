@@ -3,7 +3,7 @@
 import random
 from os import system
 import signal
-from sys import setrecursionlimit
+from collections import deque
 
 # Main class for grid
 class GameBoard:
@@ -72,6 +72,9 @@ class GameBoard:
 
 	# Performs basic checks to determine if given neighbor can be marked
 	def __check_neighbor_to_mark(self, col, row):
+		# Check limits
+		if self.check_limits(col, row):
+			return False
 		# Skip if contains mine
 		if self.matrix[row][col].mine:
 			return False
@@ -80,35 +83,30 @@ class GameBoard:
 			return False
 		return True
 
-	# Marks the neighbors of given cell recursively as applicable
+	# Marks the neighbors of given cell iteratively as applicable
 	def __mark_neighbors(self, col, row):
-		# Mark this cell and dDecrement count of unmarked cells
-		self.matrix[row][col].state = 1
-		self.left -= 1
-		# If this cell surrounds no cells with mines, continue to mark neighbors
-		if self.matrix[row][col].value:
-			return
-		# Maintain list of safe neighbors, these will be marked recursively
-		safe_neighbors = []
-		# For all adjacent cells (x - 1, y - 1) through (x + 1, y + 1)
-		for x in xrange(col - 1, col + 2):
-			for y in xrange(row - 1, row + 2):
-				if self.check_limits(x, y):
-					continue
-				# Add neighbor if it has no mine
-				if not self.matrix[y][x].mine:
-					safe_neighbors.append((x, y))
-					continue
-				# Break if it has
-				break
-		# Remove the current cell from safe_neighbors list
-		p = (col, row)
-		if p in safe_neighbors:
-			safe_neighbors.remove(p)
-		# Mark all the safe neighbors recursively
-		for n in safe_neighbors:
-			if self.__check_neighbor_to_mark(n[0], n[1]):
-				self.__mark_neighbors(n[0], n[1])
+		# Maintain a queue of neighbors, these will be marked iteratively
+		neighbors = deque([(col, row)])
+		while len(neighbors):
+			# Get next neighbor
+			next_neighbor = neighbors.popleft()
+			col = next_neighbor[0]
+			row = next_neighbor[1]
+			# Check if this cell can be marked
+			if not self.__check_neighbor_to_mark(col, row):
+				continue
+			# Mark this cell and decrement count of unmarked cells
+			self.matrix[row][col].state = 1
+			self.left -= 1
+			# If this cell surrounds no cells with mines, continue to mark neighbors
+			if not self.check_limits(col, row) and self.matrix[row][col].value:
+				continue
+			# For all adjacent cells (x - 1, y - 1) through (x + 1, y + 1)
+			for x in xrange(col - 1, col + 2):
+				for y in xrange(row - 1, row + 2):
+					if x == col and y == row:
+						continue
+					neighbors.append((x, y))
 		return
 
 	# Marks given cell and any neighbors (recursively) if it's value is 0
@@ -214,6 +212,7 @@ def gameplay(board):
 		except Exception:
 			clear_and_prompt(inv_indices_msg)
 			continue
+		print "Working..."
 		if(board.mark_cell(x - 1, y - 1)):
 			clear_and_prompt("Stepped on a mine at [%d, %d]!"%(x, y))
 			board.print_board(False)
@@ -233,8 +232,6 @@ DEF_COLS = 16
 DEF_MINES = 40
 
 if __name__ == "__main__":
-	# Set recursion limit for boards configured with huge number of cells
-	setrecursionlimit(6000)
 	# Set handler for interrupt signal (^c)
 	signal.signal(signal.SIGINT, signal_handler)
 	print "Welcome to Minesweeper for terminal!"
